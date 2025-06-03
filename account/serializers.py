@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 import string
 import random
 from django.contrib.auth import authenticate
+from .models import CustomUser, UserProfile
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 User = get_user_model()
@@ -40,25 +42,69 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 
-User = get_user_model()
 
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # Add custom claims
+        token['email'] = user.email
+        token['role'] = user.role
+        return token
 
     def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
+        data = super().validate(attrs)
+        data['email'] = self.user.email
+        data['role'] = self.user.role
+        return data
 
-        if email and password:
-            # authenticate requires username param, but your USERNAME_FIELD is email
-            user = authenticate(request=self.context.get('request'), username=email, password=password)
-            if not user:
-                raise serializers.ValidationError('Invalid email or password.')
-            if not user.is_active:
-                raise serializers.ValidationError('User account is disabled.')
-        else:
-            raise serializers.ValidationError('Both "email" and "password" are required.')
 
-        attrs['user'] = user
-        return attrs
+
+# class LoginSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     password = serializers.CharField(write_only=True)
+
+#     def validate(self, attrs):
+#         email = attrs.get('email')
+#         password = attrs.get('password')
+
+#         if email and password:
+#             # authenticate requires username param, but your USERNAME_FIELD is email
+#             user = authenticate(request=self.context.get('request'), username=email, password=password)
+#             if not user:
+#                 raise serializers.ValidationError('Invalid email or password.')
+#             if not user.is_active:
+#                 raise serializers.ValidationError('User account is disabled.')
+#         else:
+#             raise serializers.ValidationError('Both "email" and "password" are required.')
+
+#         attrs['user'] = user
+#         return attrs
+
+
+
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['full_name', 'phone', 'address', 'profile_picture']
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer()
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'role', 'profile']
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        instance = super().update(instance, validated_data)
+
+        profile = instance.profile
+        for attr, value in profile_data.items():
+            setattr(profile, attr, value)
+        profile.save()
+
+        return instance

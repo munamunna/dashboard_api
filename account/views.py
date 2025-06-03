@@ -1,23 +1,16 @@
 from django.shortcuts import render
-
-# Create your views here.
-
-# from rest_framework import viewsets
-# from .serializers import UserSerializer
-# from django.contrib.auth import get_user_model
-
-# User = get_user_model()
-
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status,permissions
 from rest_framework.response import Response
 from .models import CustomUser
-from .serializers import UserSerializer
+from .serializers import UserSerializer,CustomUserSerializer
 import secrets
 import string
-
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
-from .serializers import LoginSerializer
+
+
+
+
 
 User = get_user_model()
 
@@ -60,23 +53,43 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import MyTokenObtainPairSerializer
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 
-class LoginViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.none()  # no need for queryset on login
-    serializer_class = LoginSerializer
-    permission_classes = [AllowAny]
-    http_method_names = ['post']
+# class LoginViewSet(viewsets.ModelViewSet):
+#     queryset = User.objects.none()  # no need for queryset on login
+#     serializer_class = LoginSerializer
+#     permission_classes = [AllowAny]
+#     http_method_names = ['post']
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data, context={'request': request})
+#         serializer.is_valid(raise_exception=True)
+#         user = serializer.validated_data['user']
 
-        # Return minimal user info
-        return Response({
-            'id': user.id,
-            'email': user.email,
-            'role':user.role,
-            'message': 'Login successful'
-        }, status=status.HTTP_200_OK)
+#         # Return minimal user info
+#         return Response({
+#             'id': user.id,
+#             'email': user.email,
+#             'role':user.role,
+#             'message': 'Login successful'
+#         }, status=status.HTTP_200_OK)
+
+
+
+
+class ProfileViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return CustomUser.objects.filter(id=self.request.user.id)
+
+    def get_object(self):
+        return self.request.user
+

@@ -1,2 +1,28 @@
-http://localhost:8000/api/login/-to login users
-http://localhost:8000/api/users/-to create user by admin
+
+POST http://localhost:8000/api/token/-to login users
+Body (JSON):
+{
+  "email": "mariyam@gmial.com",
+  "password": "]+>h?\"}BtZ76"
+}
+
+===============================================================
+POST http://localhost:8000/api/users/-to create user by admin
+
+
+Body (JSON):
+{
+  "email": "Muna@gmail.com",
+  
+}
+==============================================
+PUT http://localhost:8000/api/profile/id/
+Headers:
+Authorization: Bearer your-jwt-token
+Body (JSON):
+{
+  "first_name": "Muna",
+  "last_name": "Munna",
+  "phone": "1234567890",
+  "address": "Kerala"
+}
