@@ -1,0 +1,2 @@
+http://localhost:8000/api/login/-to login users
+http://localhost:8000/api/users/-to create user by admin
