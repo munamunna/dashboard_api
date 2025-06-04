@@ -26,3 +26,19 @@ Body (JSON):
   "phone": "1234567890",
   "address": "Kerala"
 }
+==========================================
+POST /api/send-otp/
+Content-Type: application/json
+
+{
+  "email": "mariyam@gmail.com"
+}
+===========================================
+POST /api/reset-password/
+Content-Type: application/json
+
+{
+  "email": "mariyam@gmail.com",
+  "otp": "123456",
+  "new_password": "NewStrongPassword123"
+}

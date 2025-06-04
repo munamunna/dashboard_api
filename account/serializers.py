@@ -43,21 +43,39 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
 
-        # Add custom claims
-        token['email'] = user.email
-        token['role'] = user.role
-        return token
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth import authenticate
+from rest_framework import serializers
+from .models import CustomUser  # Your custom user model
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = CustomUser.EMAIL_FIELD  # Use 'email' for authentication
 
     def validate(self, attrs):
-        data = super().validate(attrs)
-        data['email'] = self.user.email
-        data['role'] = self.user.role
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        if email and password:
+            user = authenticate(request=self.context.get('request'), email=email, password=password)
+
+            if not user:
+                raise serializers.ValidationError("Invalid email or password")
+        else:
+            raise serializers.ValidationError("Must include 'email' and 'password'")
+
+        refresh = self.get_token(user)
+
+        data = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'email': user.email,
+            'role': user.role,
+        }
+
         return data
+
 
 
 
