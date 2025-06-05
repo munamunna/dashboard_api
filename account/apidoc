@@ -42,3 +42,47 @@ Content-Type: application/json
   "otp": "123456",
   "new_password": "NewStrongPassword123"
 }
+===================================
+to create comments
+URL:
+POST http://localhost:8000/api/comments/
+
+Headers:
+
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+Content-Type: application/json
+
+Body (JSON):
+
+
+{
+  "content": "This is a test comment."
+}
+============================================
+to retrieve a comment
+Method: GET
+
+URL: http://localhost:8000/api/comments/1/
+
+Headers:
+
+Authorization: Bearer <your-access-token>
+===================================
+to update a comment
+Method: PUT
+
+URL: http://localhost:8000/api/comments/1/
+
+Headers:
+
+Authorization: Bearer <your-access-token>
+
+Content-Type: application/json
+
+Body:
+
+
+{
+  "content": "Updated comment content"
+}

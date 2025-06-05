@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from rest_framework import viewsets, status,permissions
+from rest_framework import viewsets, status,permissions,generics
 from rest_framework.response import Response
-from .models import CustomUser
-from .serializers import UserSerializer,CustomUserSerializer
+from .models import CustomUser,Comment
+from .serializers import UserSerializer,CustomUserSerializer,UserListSerializer,CommentSerializer
 import secrets
 import string
 from rest_framework.permissions import AllowAny
@@ -16,6 +16,14 @@ from datetime import timedelta
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import MyTokenObtainPairSerializer
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
+
+
+
+
+
+
 
 
 
@@ -26,6 +34,7 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+    http_method_names = ['post'] 
 
     def generate_password(self, length=12):
         characters = string.ascii_letters + string.digits + string.punctuation
@@ -55,6 +64,7 @@ class UserViewSet(viewsets.ModelViewSet):
             "data": {
                 "id": user.id,
                 "email": user.email,
+                
                 "generated_password": password if auto_generated else "Provided by user"
             }
         }
@@ -88,6 +98,21 @@ class MyTokenObtainPairView(TokenObtainPairView):
 #         }, status=status.HTTP_200_OK)
 
 
+
+
+
+
+
+
+class UserListViewSet(viewsets.ViewSet):
+    def list(self, request):
+        users = CustomUser.objects.select_related('profile').all()
+        serializer = UserListSerializer(users, many=True)
+        return Response({
+            "message": "User list fetched successfully",
+            "result": True,
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -155,4 +180,84 @@ class VerifyOTPAndResetPasswordView(APIView):
 
         except CustomUser.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+
+
+class CommentListCreateView(generics.ListCreateAPIView):
+    queryset = Comment.objects.all().order_by('-created_at')
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'message': 'Comment list fetched successfully',
+            'result': True,
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=self.request.user)
+        return Response({
+            'message': 'Comment created successfully',
+            'result': True,
+            'data': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+
+class CommentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "result": True,
+            "data": serializer.data,
+            "message": "Comment retrieved successfully"
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user != instance.author:
+            return Response({
+                "result": False,
+                "data": None,
+                "message": "You cannot edit others' comments"
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            "result": True,
+            "data": serializer.data,
+            "message": "Comment updated successfully"
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user != instance.author:
+            return Response({
+                "result": False,
+                "data": None,
+                "message": "You cannot delete others' comments"
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        self.perform_destroy(instance)
+        return Response({
+            "result": True,
+            "data": None,
+            "message": "Comment deleted successfully"
+        }, status=status.HTTP_200_OK)
 

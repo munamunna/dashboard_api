@@ -2,7 +2,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from .managers import CustomUserManager
-from django.conf import settings 
+from django.conf import settings
+from django.utils import timezone 
 
 class CustomUser(AbstractUser):
     
@@ -34,3 +35,16 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.email}'s profile"
+
+
+
+
+
+class Comment(models.Model):
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
+    content = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Comment by {self.author.email} at {self.created_at}"

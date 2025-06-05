@@ -6,6 +6,9 @@ import random
 from django.contrib.auth import authenticate
 from .models import CustomUser, UserProfile
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth import authenticate
+from .models import Comment
 
 
 User = get_user_model()
@@ -39,16 +42,6 @@ class UserSerializer(serializers.ModelSerializer):
         return ''.join(random.choice(chars) for _ in range(length))
 
 
-
-
-
-
-
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
-from django.contrib.auth import authenticate
-from rest_framework import serializers
-from .models import CustomUser  # Your custom user model
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = CustomUser.EMAIL_FIELD  # Use 'email' for authentication
@@ -126,3 +119,27 @@ class CustomUserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return instance
+
+
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='profile.full_name', read_only=True)
+    phone = serializers.CharField(source='profile.phone', read_only=True)
+    address = serializers.CharField(source='profile.address', read_only=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'role', 'full_name', 'phone', 'address']
+
+
+
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author_name = serializers.ReadOnlyField(source='author.email')
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'author', 'author_name', 'content', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'author', 'created_at', 'updated_at']
